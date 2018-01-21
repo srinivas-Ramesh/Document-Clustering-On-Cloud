@@ -1,6 +1,8 @@
 package com.project.documentclustering.resources;
 
+import java.io.InputStream;
 import java.util.List;
+import java.util.Scanner;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -11,7 +13,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
-import org.eclipse.persistence.annotations.DeleteAll;
 import org.glassfish.jersey.media.multipart.BodyPartEntity;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
@@ -19,26 +20,30 @@ import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.project.documentclustering.datamodel.DataBase;
+import com.project.documentclustering.lucene.Processor;
 
 @Path("/clustering")
 public class ClusteringResource {
 
 	private DataBase dataBase;
+	private Scanner scanner;
 
 	@GET
 	public Response getFiles() {
 		DataBase dataBase = DataBase.getInstance();
 		if (!dataBase.getFileNames().isEmpty()) {
 			
-			List<String> fileNames = dataBase.getFileNames();
-			JsonArray namesArray = new JsonArray();
-			for (String name : fileNames) {
-				namesArray.add(name);
-			}
-
-			JsonObject fileNamesObject = new JsonObject();
-			fileNamesObject.add("files", namesArray);
-			return Response.ok(fileNamesObject.toString(), MediaType.APPLICATION_JSON).build();
+			Processor processor = new Processor();
+			
+//			List<String> fileNames = dataBase.getFileNames();
+//			JsonArray namesArray = new JsonArray();
+//			for (String name : fileNames) {
+//				namesArray.add(name);
+//			}
+//
+//			JsonObject fileNamesObject = new JsonObject();
+//			fileNamesObject.add("files", namesArray);
+//			return Response.ok(fileNamesObject.toString(), MediaType.APPLICATION_JSON).build();
 		}
 
 		else {
@@ -46,6 +51,7 @@ public class ClusteringResource {
 		}
 
 	}
+	
 
 	@Path("/upload")
 	@POST
@@ -88,5 +94,14 @@ public class ClusteringResource {
 		dataBase = DataBase.getInstance();
 		dataBase.setFileEntity(fileEntity);
 		dataBase.setFileName(fileName);
+		dataBase.setFileContent(getText(fileEntity));
+	}
+	
+	public String getText(BodyPartEntity entity) {
+		InputStream stream = entity.getInputStream();
+		scanner = new Scanner(stream);
+		Scanner s = scanner.useDelimiter("\\A");
+		String result = s.hasNext() ? s.next() : "";
+		return result;
 	}
 }

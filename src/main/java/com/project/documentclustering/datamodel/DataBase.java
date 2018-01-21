@@ -11,18 +11,32 @@ public class DataBase {
 	private List<BodyPartEntity> fileEntities;
 	private List<String> fileNames;
 	private static DataBase instance;
+	private List<String> fileContents;
 	
+	
+
 	private DataBase() {
 		fileEntities = new ArrayList<BodyPartEntity>();
 		fileNames = new ArrayList<String>();
+		fileContents = new ArrayList<String>();
 	}
 
+	
 	public static DataBase getInstance() {
 		if( instance == null) {
 			instance = new DataBase();
 		}
 		return instance;
 	}
+	
+	public List<String> getFileContents() {
+		return fileContents;
+	}
+
+	public void setFileContent(String fileContent) {
+		this.fileContents.add(fileContent);
+	}
+	
 	public List<String> getFileNames() {
 		return fileNames;
 	}
@@ -43,6 +57,8 @@ public class DataBase {
 		if(instance != null) {
 			instance.getFileEntities().clear();
 			instance.getFileNames().clear();
+			instance.getFileContents().clear();
 		}
 	}
+	
 }
