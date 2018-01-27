@@ -27,11 +27,10 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.SimpleFSDirectory;
-import org.apache.tomcat.util.http.fileupload.FileUtils;
 
+import com.google.common.io.MoreFiles;
+import com.google.common.io.RecursiveDeleteOption;
 import com.project.documentclustering.datamodel.DataBase;
-
-import document_analyzer.ResultClass;
 
 public class LuceneClass {
 
@@ -46,11 +45,28 @@ public class LuceneClass {
 		Analyzer analyzer = new StandardAnalyzer();
 		IndexWriterConfig indexWriterConfig = new IndexWriterConfig(analyzer);
 		Path path = FileSystems.getDefault().getPath(indexDirectoryPath, "index");
+		
+		//close the previous directory to gain access to delete it
+		if(directory != null) directory.close();
 		deleteIndexDirectory(path);
 		directory = new SimpleFSDirectory(path);
 		indexWriter = new IndexWriter(directory, indexWriterConfig);
-
 	}
+
+	public IndexWriter getIndexWriter() {
+		return indexWriter;
+	}
+
+
+	public IndexReader getIndexReader() {
+		return indexReader;
+	}
+
+
+	public Directory getDirectory() {
+		return directory;
+	}
+
 
 	public ArrayList<Map> getTermVectors() {
 
@@ -74,6 +90,7 @@ public class LuceneClass {
 					System.err.println("Document " + i + " had a null terms vector for body");
 				}
 			}
+			indexReader.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -84,15 +101,15 @@ public class LuceneClass {
 		indexWriter.close();
 	}
 
-	public void indexDirectory(String directory) throws IOException {
+	public void indexDirectory() throws IOException {
 
 		DataBase dataBase = DataBase.getInstance();
 
-		for (String fileContent : dataBase.getFileContents()) {
+		for (String fileName : dataBase.getFileNames()) {
 
 			// System.out.println("Indexing " + file.getCanonicalPath());
-			Document document = getDocument(fileContent,
-					dataBase.getFileNames().get(dataBase.getFileEntities().indexOf(fileContent)));
+			Document document = getDocument(dataBase.getFileContents().get(dataBase.getFileNames().indexOf(fileName)),
+					fileName);
 			indexWriter.addDocument(document);
 		}
 		indexWriter.flush();
@@ -109,12 +126,13 @@ public class LuceneClass {
 		type.setStoreTermVectors(true);
 
 		// index file contents
-//		Field contentField = new Field("Contents", fileOperator.readFiles(file.getAbsolutePath()), type);
+		// Field contentField = new Field("Contents",
+		// fileOperator.readFiles(file.getAbsolutePath()), type);
 		Field fileNameField = new TextField("FileName", file.getName(), Store.YES);
 
 		// // index file path
 		Field filePathField = new StringField("Path", file.getAbsolutePath(), Field.Store.YES);
-//		document.add(contentField);
+		// document.add(contentField);
 		document.add(fileNameField);
 		document.add(filePathField);
 		return document;
@@ -176,7 +194,7 @@ public class LuceneClass {
 		return similarDocuments;
 	}
 
-	public ArrayList<ResultClass> getCopyDocuments(ArrayList<ArrayList<Double>> similarityMatrix, int maxValue) {
+	public ArrayList<ResultClass> getCopyDocuments(ArrayList<ArrayList<Double>> similarityMatrix, Double maxValue) {
 
 		ArrayList<ResultClass> copyDocuments = new ArrayList<ResultClass>();
 
@@ -219,11 +237,9 @@ public class LuceneClass {
 	public ArrayList<String> getDocumentClusters(ArrayList<ArrayList<Double>> similarityMatrix) {
 
 		ArrayList<String> documentsCluster = new ArrayList<String>();
-
 		boolean subString;
 
 		for (ArrayList<Double> row : similarityMatrix) {
-
 			subString = false;
 			String cluster;
 			cluster = String.valueOf(similarityMatrix.indexOf(row) + 1);
@@ -233,7 +249,6 @@ public class LuceneClass {
 					cluster = cluster + "," + String.valueOf(column + 1);
 				}
 			}
-
 			for (String string : documentsCluster) {
 				if (string.contains(cluster)) {
 					subString = true;
@@ -251,13 +266,25 @@ public class LuceneClass {
 		return documentsCluster;
 	}
 
-	private boolean deleteIndexDirectory(Path path) {
+	private void deleteIndexDirectory(Path path) {
+//		File file = new File(path.toString());
+//		// to end the recursive loop
+//		if (!file.exists())
+//			return;
+//
+//		// if directory, go inside and call recursively
+//		if (file.isDirectory()) {
+//			for (File f : file.listFiles()) {
+//				// call recursively
+//				deleteIndexDirectory(f.toPath());
+//			}
+//		}
+//		// call delete to delete files and empty directory
+//		file.delete();
 		try {
-			FileUtils.deleteDirectory(new File(path.toString()));
-			return true;
+			MoreFiles.deleteRecursively(path, RecursiveDeleteOption.ALLOW_INSECURE);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			return false;
+			e.printStackTrace();
 		}
 	}
 }

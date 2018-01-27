@@ -1,62 +1,50 @@
 package com.project.documentclustering.lucene;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Map;
 
-import document_analyzer.LuceneClass;
-import document_analyzer.ResultClass;
+import com.project.documentclustering.datamodel.DataBase;
 
 public class Processor {
 
 	private LuceneClass lucene;
-	private static String indexDirectoryPath = "C:\\Users\\Srinivas Rao\\Desktop";
-	private static String dataDirectoryPath = "C:\\Users\\Srinivas Rao\\Desktop\\documents";
+	private String indexDirectoryPath;
+	private DataBase dataBase;
 
-	private ArrayList<Map> termVectors;
-	private ArrayList<ArrayList<Double>> similarityMatrix;
-	private ArrayList<ResultClass> similarDocuments;
-	private ArrayList<ResultClass> copyDocuments;
-	private ArrayList<ResultClass> outlierDocuments;
-	private ArrayList<ResultClass> documentsClusters;
-
-	private Processor() {
-	}
-
-	public Processor(String indexPath, String dataPath) {
+	public Processor(String indexPath) {
 		this.indexDirectoryPath = indexPath;
-		this.dataDirectoryPath = dataPath;
 	}
 
-	public void clusterDocuments(int minValue, int maxValue) {
+	public void clusterDocuments(Double minValue, Double maxValue) {
 
 		try {
 
 			lucene = new LuceneClass(indexDirectoryPath);
 
-			lucene.indexDirectory(dataDirectoryPath);
+			lucene.indexDirectory();
 
 			lucene.close();
+			
+			dataBase = DataBase.getInstance();
 
 			// --------------------DOCUMENT VECTORS--------------------
 
-			termVectors = lucene.getTermVectors();
+			dataBase.setTermVectors(lucene.getTermVectors());
 
 			// --------------------SIMILARITY MATRIX--------------------
 
-			similarityMatrix = lucene.getSimilarityMatrix(termVectors);
+			dataBase.setSimilarityMatrix(lucene.getSimilarityMatrix(dataBase.getTermVectors()));
 
 			// --------------------SIMILAR DOCUMENTS--------------------
 
-			similarDocuments = lucene.getSimilarDocuments(similarityMatrix, minValue, maxValue);
+			dataBase.setSimilarDocuments(lucene.getSimilarDocuments(dataBase.getSimilarityMatrix(), minValue, maxValue));
 
 			// --------------------COPY DOCUMENTS--------------------
 
-			copyDocuments = lucene.getCopyDocuments(similarityMatrix, maxValue);
+			dataBase.setCopyDocuments(lucene.getCopyDocuments(dataBase.getSimilarityMatrix(), maxValue));
 
 			// --------------------OUTLIER DOCUMENTS--------------------
 
-			outlierDocuments = lucene.getOutlierDocuments(similarityMatrix, minValue, maxValue);
+			dataBase.setOutlierDocuments(lucene.getOutlierDocuments(dataBase.getSimilarityMatrix(), minValue, maxValue));
 
 			// --------------------DOCUMENTS CLUSTER--------------------
 

@@ -1,12 +1,14 @@
 package com.project.documentclustering.resources;
 
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
+import javax.ws.rs.HeaderParam;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.MediaType;
@@ -21,6 +23,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.project.documentclustering.datamodel.DataBase;
 import com.project.documentclustering.lucene.Processor;
+import com.project.documentclustering.lucene.ResultClass;
 
 @Path("/clustering")
 public class ClusteringResource {
@@ -29,29 +32,81 @@ public class ClusteringResource {
 	private Scanner scanner;
 
 	@GET
-	public Response getFiles() {
-		DataBase dataBase = DataBase.getInstance();
-		if (!dataBase.getFileNames().isEmpty()) {
-			
-			Processor processor = new Processor();
-			
-//			List<String> fileNames = dataBase.getFileNames();
-//			JsonArray namesArray = new JsonArray();
-//			for (String name : fileNames) {
-//				namesArray.add(name);
-//			}
-//
-//			JsonObject fileNamesObject = new JsonObject();
-//			fileNamesObject.add("files", namesArray);
-//			return Response.ok(fileNamesObject.toString(), MediaType.APPLICATION_JSON).build();
+	public Response getFiles(@HeaderParam("dataPath") String dataPath, @HeaderParam("indexPath") String indexPath,
+			@HeaderParam("minValue") Double minValue, @HeaderParam("maxValue") Double maxValue) {
+		dataBase = DataBase.getInstance();
+		if (indexPath == null || minValue == null || maxValue == null) {
+			return Response.status(Status.BAD_REQUEST)
+					.entity("pass dataPath, indexPath, minValue, maxValue as header parameters").build();
+		}
+
+		else if (!dataBase.getFileNames().isEmpty()) {
+
+			Processor processor = new Processor(indexPath);
+			processor.clusterDocuments(minValue, maxValue);
+			JsonObject result = prepareClusterResponse(dataBase);
+			return Response.ok(result.toString(), MediaType.APPLICATION_JSON).build();
 		}
 
 		else {
-			return Response.noContent().build();
+			return Response.status(Status.NOT_ACCEPTABLE).entity("No files have been saved in the system").build();
 		}
 
 	}
-	
+
+	private JsonObject prepareClusterResponse(DataBase dataBase) {
+
+		JsonObject CopyDocumentsJsonObject = new JsonObject();
+		ArrayList<ResultClass> copyDocuments = dataBase.getCopyDocuments();
+		int counter =1;
+		
+		for (ResultClass copyDocument : copyDocuments) {
+			JsonArray documentArray = new JsonArray();
+			documentArray.add(getFileName(copyDocument.getDocument1()));
+			documentArray.add(getFileName(copyDocument.getDocument2()));
+			CopyDocumentsJsonObject.add(String.valueOf(counter++), documentArray);
+		}
+
+		JsonObject OutliersJsonObject = new JsonObject();
+		ArrayList<ResultClass> outlierDocuments = dataBase.getOutlierDocuments();
+		counter =1;
+		
+		for (ResultClass outlierDocument : outlierDocuments) {
+			OutliersJsonObject.addProperty(String.valueOf(counter++),
+					getFileName(outlierDocument.getDocument1()));
+		}
+
+		JsonObject similarDocumentsJsonObject = new JsonObject();
+		ArrayList<ResultClass> similarDocuments = dataBase.getSimilarDocuments();
+		counter = 1;
+		for (ResultClass similarDocument : similarDocuments) {
+		
+			JsonArray documentArray = new JsonArray();
+			documentArray.add(getFileName(similarDocument.getDocument1()));
+			documentArray.add(getFileName(similarDocument.getDocument2()));
+			similarDocumentsJsonObject.add(String.valueOf(counter++), documentArray);
+		}
+
+		JsonObject responseObject = new JsonObject();
+		responseObject.add("similarDocuments", similarDocumentsJsonObject);
+		responseObject.add("oulierDocuments", OutliersJsonObject);
+		responseObject.add("copyDocuments", CopyDocumentsJsonObject);
+
+		return responseObject;
+	}
+
+	private String getFileName(int document1) {
+		return dataBase.getFileNames().get(document1);
+	}
+
+	@DELETE
+	public Response deleteAllFiles() {
+		dataBase = DataBase.getInstance();
+		if (!dataBase.getFileNames().isEmpty()) {
+			dataBase.clearDataBase();
+		}
+		return Response.ok().build();
+	}
 
 	@Path("/upload")
 	@POST
@@ -80,15 +135,6 @@ public class ClusteringResource {
 
 		return Response.ok("Files saved for Document Clustering").build();
 	}
-	
-	@DELETE
-	public Response deleteAllFiles() {
-		dataBase = DataBase.getInstance();
-		if(!dataBase.getFileNames().isEmpty()) {
-			dataBase.clearDataBase();
-		}
-		return Response.ok().build();
-	}
 
 	private void saveFile(BodyPartEntity fileEntity, String fileName) {
 		dataBase = DataBase.getInstance();
@@ -96,7 +142,7 @@ public class ClusteringResource {
 		dataBase.setFileName(fileName);
 		dataBase.setFileContent(getText(fileEntity));
 	}
-	
+
 	public String getText(BodyPartEntity entity) {
 		InputStream stream = entity.getInputStream();
 		scanner = new Scanner(stream);
