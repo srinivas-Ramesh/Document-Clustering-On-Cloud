@@ -2,7 +2,7 @@
         background-image:url("http://getwallpapers.com/wallpaper/full/0/b/0/43335.jpg");
         background-size: cover;
         background-repeat: no-repeat;
-        width: 100%;
+        background-attachment: fixed;
         height: 100%;
 								}
 .trans{
@@ -20,22 +20,18 @@ h1 {
         text-align: center;
         margin: 3px;
   						padding: 3px;
-  						filter:blur(0.5px);
     }
 
 h1:hover{
 	filter:blur(2px);
-	-webkit-animation: mymove 0.5s; /* Chrome, Safari, Opera */
- animation: animation 0.5s;
-}    
+} 
+
+div.form{
+	   height: 200px;
+    margin: 20px;
+    padding: 15px;
+    line-height: 200px;
+    text-align: center;
+}  
 
 
-/* Chrome, Safari, Opera */
-@-webkit-keyframes animation {
-    100% {font-size: 65px;}
-}
-
-/* Standard syntax */
-@keyframes animation {
-    100% {font-size: 65px;}
-}

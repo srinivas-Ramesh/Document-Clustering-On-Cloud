@@ -11,10 +11,10 @@
 			<h1>Document Clustering</h1>
 		</div>
 
-		<div>
+		<div class="form">
 			<form action="upload.php" method="post" enctype="multipart/form-data">
 				<input type="file" name="fileToUpload" id="fileToUpload">
-				<input type="submit" value="Upload File" name="submit">
+				<input type="submit" name="submit" value="submit">
 			</form>	
 		</div>
 	</div>
