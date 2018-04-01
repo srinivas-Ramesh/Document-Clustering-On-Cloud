@@ -1,6 +1,11 @@
 package com.project.documentclustering.resources;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -15,6 +20,9 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
 import org.glassfish.jersey.media.multipart.BodyPartEntity;
 import org.glassfish.jersey.media.multipart.FormDataBodyPart;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
@@ -58,8 +66,8 @@ public class ClusteringResource {
 
 		JsonObject CopyDocumentsJsonObject = new JsonObject();
 		ArrayList<ResultClass> copyDocuments = dataBase.getCopyDocuments();
-		int counter =1;
-		
+		int counter = 1;
+
 		for (ResultClass copyDocument : copyDocuments) {
 			JsonArray documentArray = new JsonArray();
 			documentArray.add(getFileName(copyDocument.getDocument1()));
@@ -69,18 +77,17 @@ public class ClusteringResource {
 
 		JsonObject OutliersJsonObject = new JsonObject();
 		ArrayList<ResultClass> outlierDocuments = dataBase.getOutlierDocuments();
-		counter =1;
-		
+		counter = 1;
+
 		for (ResultClass outlierDocument : outlierDocuments) {
-			OutliersJsonObject.addProperty(String.valueOf(counter++),
-					getFileName(outlierDocument.getDocument1()));
+			OutliersJsonObject.addProperty(String.valueOf(counter++), getFileName(outlierDocument.getDocument1()));
 		}
 
 		JsonObject similarDocumentsJsonObject = new JsonObject();
 		ArrayList<ResultClass> similarDocuments = dataBase.getSimilarDocuments();
 		counter = 1;
 		for (ResultClass similarDocument : similarDocuments) {
-		
+
 			JsonArray documentArray = new JsonArray();
 			documentArray.add(getFileName(similarDocument.getDocument1()));
 			documentArray.add(getFileName(similarDocument.getDocument2()));
@@ -124,7 +131,7 @@ public class ClusteringResource {
 		for (int i = 0; i < bodyParts.size(); i++) {
 			BodyPartEntity bodyPartEntity = (BodyPartEntity) bodyParts.get(i).getEntity();
 			String fileName = bodyParts.get(i).getContentDisposition().getFileName();
-			if (fileName.contains(".txt")) {
+			if (fileName.contains(".txt") || fileName.contains(".pdf")) {
 				if (!dataBase.getFileNames().contains(fileName)) {
 					saveFile(bodyPartEntity, fileName);
 				}
@@ -140,14 +147,32 @@ public class ClusteringResource {
 		dataBase = DataBase.getInstance();
 		dataBase.setFileEntity(fileEntity);
 		dataBase.setFileName(fileName);
-		dataBase.setFileContent(getText(fileEntity));
+		try {
+			dataBase.setFileContent(getText(fileEntity, fileName));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
-	public String getText(BodyPartEntity entity) {
-		InputStream stream = entity.getInputStream();
-		scanner = new Scanner(stream);
-		Scanner s = scanner.useDelimiter("\\A");
-		String result = s.hasNext() ? s.next() : "";
-		return result;
+	public String getText(BodyPartEntity entity, String fileName) throws IOException {
+
+		if (fileName.toLowerCase().endsWith("pdf")) {
+			
+			InputStream stream = entity.getInputStream();
+			File file = new File("pdf");
+			OutputStream outputStream = new FileOutputStream(file);
+			IOUtils.copy(stream, outputStream);
+			outputStream.close();
+			PDDocument document = PDDocument.load(file);
+			PDFTextStripper pdfStripper = new PDFTextStripper();
+			String text = pdfStripper.getText(document);
+			return text;
+		} else {
+			InputStream stream = entity.getInputStream();
+			scanner = new Scanner(stream);
+			Scanner s = scanner.useDelimiter("\\A");
+			String result = s.hasNext() ? s.next() : "";
+			return result;
+		}
 	}
 }
