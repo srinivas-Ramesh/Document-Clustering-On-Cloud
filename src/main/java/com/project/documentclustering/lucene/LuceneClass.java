@@ -86,6 +86,7 @@ public class LuceneClass {
 						++numTerms;
 					}
 					documentVectors.add(vector);
+					System.out.println("Document Vector "+(i+1)+" :  " +vector.toString()+"\n");
 				} else {
 					System.err.println("Document " + i + " had a null terms vector for body");
 				}

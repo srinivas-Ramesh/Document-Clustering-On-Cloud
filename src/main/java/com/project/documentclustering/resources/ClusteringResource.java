@@ -166,6 +166,7 @@ public class ClusteringResource {
 			PDDocument document = PDDocument.load(file);
 			PDFTextStripper pdfStripper = new PDFTextStripper();
 			String text = pdfStripper.getText(document);
+			document.close();
 			return text;
 		} else {
 			InputStream stream = entity.getInputStream();
