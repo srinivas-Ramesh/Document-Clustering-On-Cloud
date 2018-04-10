@@ -64,40 +64,55 @@ public class ClusteringResource {
 
 	private JsonObject prepareClusterResponse(DataBase dataBase) {
 
-		JsonObject CopyDocumentsJsonObject = new JsonObject();
+		//Copy Documents
+		JsonArray copyDocumentsJsonArray = new JsonArray();
 		ArrayList<ResultClass> copyDocuments = dataBase.getCopyDocuments();
 		int counter = 1;
 
 		for (ResultClass copyDocument : copyDocuments) {
+			JsonObject copyObject = new JsonObject();
+			copyObject.addProperty("index", counter++);
 			JsonArray documentArray = new JsonArray();
 			documentArray.add(getFileName(copyDocument.getDocument1()));
 			documentArray.add(getFileName(copyDocument.getDocument2()));
-			CopyDocumentsJsonObject.add(String.valueOf(counter++), documentArray);
+			copyObject.add("files", documentArray);
+			copyDocumentsJsonArray.add(copyObject);
 		}
 
-		JsonObject OutliersJsonObject = new JsonObject();
+		//Outlier Documents
+		JsonArray outlierDocumentsJsonArray = new JsonArray();
 		ArrayList<ResultClass> outlierDocuments = dataBase.getOutlierDocuments();
 		counter = 1;
 
 		for (ResultClass outlierDocument : outlierDocuments) {
-			OutliersJsonObject.addProperty(String.valueOf(counter++), getFileName(outlierDocument.getDocument1()));
+			JsonObject outlierObject = new JsonObject();
+			outlierObject.addProperty("index", counter++);
+			JsonArray documentArray = new JsonArray();
+			documentArray.add(getFileName(outlierDocument.getDocument1()));
+			outlierObject.add("files", documentArray);
+			outlierDocumentsJsonArray.add(outlierObject);
 		}
-
-		JsonObject similarDocumentsJsonObject = new JsonObject();
+		
+		
+		//Similar Documents
+		JsonArray similarDocumentsJsonArray = new JsonArray();
 		ArrayList<ResultClass> similarDocuments = dataBase.getSimilarDocuments();
 		counter = 1;
-		for (ResultClass similarDocument : similarDocuments) {
 
+		for (ResultClass similarDocument : similarDocuments) {
+			JsonObject similarObject = new JsonObject();
+			similarObject.addProperty("index", counter++);
 			JsonArray documentArray = new JsonArray();
 			documentArray.add(getFileName(similarDocument.getDocument1()));
 			documentArray.add(getFileName(similarDocument.getDocument2()));
-			similarDocumentsJsonObject.add(String.valueOf(counter++), documentArray);
+			similarObject.add("files", documentArray);
+			similarDocumentsJsonArray.add(similarObject);
 		}
-
+		
 		JsonObject responseObject = new JsonObject();
-		responseObject.add("similarDocuments", similarDocumentsJsonObject);
-		responseObject.add("oulierDocuments", OutliersJsonObject);
-		responseObject.add("copyDocuments", CopyDocumentsJsonObject);
+		responseObject.add("similarDocuments", similarDocumentsJsonArray);
+		responseObject.add("oulierDocuments", outlierDocumentsJsonArray);
+		responseObject.add("copyDocuments", copyDocumentsJsonArray);
 
 		return responseObject;
 	}
