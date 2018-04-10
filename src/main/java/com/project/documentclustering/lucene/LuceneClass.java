@@ -5,7 +5,9 @@ import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -45,9 +47,10 @@ public class LuceneClass {
 		Analyzer analyzer = new StandardAnalyzer();
 		IndexWriterConfig indexWriterConfig = new IndexWriterConfig(analyzer);
 		Path path = FileSystems.getDefault().getPath(indexDirectoryPath, "index");
-		
-		//close the previous directory to gain access to delete it
-		if(directory != null) directory.close();
+
+		// close the previous directory to gain access to delete it
+		if (directory != null)
+			directory.close();
 		deleteIndexDirectory(path);
 		directory = new SimpleFSDirectory(path);
 		indexWriter = new IndexWriter(directory, indexWriterConfig);
@@ -57,16 +60,13 @@ public class LuceneClass {
 		return indexWriter;
 	}
 
-
 	public IndexReader getIndexReader() {
 		return indexReader;
 	}
 
-
 	public Directory getDirectory() {
 		return directory;
 	}
-
 
 	public ArrayList<Map> getTermVectors() {
 
@@ -86,7 +86,7 @@ public class LuceneClass {
 						++numTerms;
 					}
 					documentVectors.add(vector);
-					System.out.println("Document Vector "+(i+1)+" :  " +vector.toString()+"\n");
+					System.out.println("Document Vector " + (i + 1) + " :  " + vector.toString() + "\n");
 				} else {
 					System.err.println("Document " + i + " had a null terms vector for body");
 				}
@@ -235,18 +235,21 @@ public class LuceneClass {
 		return outliers;
 	}
 
-	public ArrayList<String> getDocumentClusters(ArrayList<ArrayList<Double>> similarityMatrix) {
+	public ArrayList<String> getDocumentClusters(ArrayList<ArrayList<Double>> similarityMatrix, Double minValue,
+			Double maxValue) {
 
 		ArrayList<String> documentsCluster = new ArrayList<String>();
 		boolean subString;
 
 		for (ArrayList<Double> row : similarityMatrix) {
+
 			subString = false;
 			String cluster;
 			cluster = String.valueOf(similarityMatrix.indexOf(row) + 1);
 
 			for (int column = similarityMatrix.indexOf(row) + 1; column < row.size(); column++) {
-				if (row.get(column) >= Double.valueOf(0.2) && row.get(column) < Double.valueOf(0.8)) {
+
+				if (row.get(column) >= Double.valueOf(minValue) && row.get(column) < Double.valueOf(maxValue)) {
 					cluster = cluster + "," + String.valueOf(column + 1);
 				}
 			}
@@ -268,24 +271,81 @@ public class LuceneClass {
 	}
 
 	private void deleteIndexDirectory(Path path) {
-//		File file = new File(path.toString());
-//		// to end the recursive loop
-//		if (!file.exists())
-//			return;
-//
-//		// if directory, go inside and call recursively
-//		if (file.isDirectory()) {
-//			for (File f : file.listFiles()) {
-//				// call recursively
-//				deleteIndexDirectory(f.toPath());
-//			}
-//		}
-//		// call delete to delete files and empty directory
-//		file.delete();
+		// File file = new File(path.toString());
+		// // to end the recursive loop
+		// if (!file.exists())
+		// return;
+		//
+		// // if directory, go inside and call recursively
+		// if (file.isDirectory()) {
+		// for (File f : file.listFiles()) {
+		// // call recursively
+		// deleteIndexDirectory(f.toPath());
+		// }
+		// }
+		// // call delete to delete files and empty directory
+		// file.delete();
 		try {
 			MoreFiles.deleteRecursively(path, RecursiveDeleteOption.ALLOW_INSECURE);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
+
+	public ArrayList<ArrayList<Integer>> getDocumentClusters(ArrayList<ResultClass> similarDocuments) {
+
+		ArrayList<ArrayList<Integer>> finalArray = new ArrayList<>();
+		for (ResultClass result : similarDocuments) {
+
+			ArrayList<Integer> cluster = new ArrayList<Integer>();
+			cluster.add(result.getDocument1());
+			cluster.add(result.getDocument2());
+
+			for (ResultClass result1 : similarDocuments) {
+
+				if (cluster.contains(result1.getDocument1())
+						&& similarDocuments.indexOf(result1) != similarDocuments.indexOf(result)) {
+					cluster.add(result1.getDocument2());
+				}
+
+				else if (cluster.contains(result1.getDocument2())
+						&& similarDocuments.indexOf(result1) != similarDocuments.indexOf(result)) {
+					cluster.add(result1.getDocument1());
+				}
+			}
+
+			// check for ducplicate clusters
+			boolean notDuplicate = true;
+			for (ArrayList<Integer> cluster1 : finalArray) {
+				if (equalLists(cluster, cluster1)) {
+					notDuplicate = false;
+				}
+			}
+			if (notDuplicate) {
+				finalArray.add(cluster);
+			}
+		}
+		
+		return finalArray;
+	}
+
+	public boolean equalLists(List<Integer> one, List<Integer> two) {
+		if (one == null && two == null) {
+			return true;
+		}
+
+		if ((one == null && two != null) || one != null && two == null || one.size() != two.size()) {
+			return false;
+		}
+
+		// to avoid messing the order of the lists we will use a copy
+		// as noted in comments by A. R. S.
+		one = new ArrayList<Integer>(one);
+		two = new ArrayList<Integer>(two);
+
+		Collections.sort(one);
+		Collections.sort(two);
+		return one.equals(two);
+	}
+
 }

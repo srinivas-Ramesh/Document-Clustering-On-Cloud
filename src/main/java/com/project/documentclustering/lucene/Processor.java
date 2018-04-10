@@ -82,8 +82,15 @@ public class Processor {
 			
 			System.out.println("\n");
 			// --------------------DOCUMENTS CLUSTER--------------------
-
-			// documentsClusters = lucene.getDocumentClusters(similarityMatrix);
+			System.out.println("--------------------DOCUMENT CLUSTERS--------------------\n");
+			 ArrayList<ArrayList<Integer>> documentsClusters = lucene.getDocumentClusters(dataBase.getSimilarDocuments());
+			 for(ArrayList<Integer> cluster : documentsClusters ) {
+				 System.out.print("cluster "+documentsClusters.indexOf(cluster)+"  : ");
+				 for(Integer file : cluster) {
+					 System.out.print(dataBase.getFileNames().get(file.intValue())+", ");
+				 }
+				 System.out.println("\n");
+			 }
 
 		} catch (IOException e) {
 			e.printStackTrace();
